@@ -1,0 +1,57 @@
+# Task: Add optional HTML escaping switches
+
+You are maintaining a small Python project that implements a minimal table renderer `PrettyTable` (see `src/miniprettytable/table.py`). It can render table data as HTML.
+
+## Background
+
+Currently, `PrettyTable.get_html_string()` always HTML-escapes both:
+- header text, and
+- data cell text
+
+(e.g. `<em>` becomes `&lt;em&gt;`).
+
+Escaping by default is security-friendly, but it prevents users from keeping small, controlled markup (such as `<em>` or `<a>`) in the generated HTML. Your job is to keep the default behavior unchanged, while allowing users to explicitly disable escaping.
+
+## What you must do
+
+1. Add two keyword parameters to `PrettyTable.get_html_string()`:
+   - `escape_header: bool` — whether to escape header text
+   - `escape_data: bool` — whether to escape data cell text
+
+2. **Default behavior must not change**:
+   - If callers do not pass these parameters, behavior must be equivalent to `escape_header=True` and `escape_data=True` (escaping stays on).
+
+3. When a switch is explicitly disabled:
+   - `escape_header=False`: header text must remain unescaped (so tags like `<em>` and `<a>` can appear in the output HTML)
+   - `escape_data=False`: same for data cells
+
+4. Both switches must work in both modes:
+   - `format=False` (simple HTML)
+   - `format=True` (HTML with style attributes)
+
+5. **You do not need to add new tests**:
+   - The repository already contains tests under `tests/` that cover the key acceptance criteria.
+   - Your goal is to fix the implementation so all provided tests pass.
+
+6. **You must do a real red → green verification**:
+   - At the end, run the test command and iterate based on real terminal failures until everything is green.
+   - Passing must be proven by the real test runner output (e.g. `pytest` summary / exit code 0, or `python -m unittest`).
+   - Do not use custom prints/logs to claim success.
+
+7. **Create or update README.md**:
+   - Provide concise, actionable instructions: what the repo is for, how to create/activate a virtual environment, how to install dependencies, and how to run the tests.
+
+## Environment constraints
+
+- Python: 3.10+
+- You must create and use a virtual environment in the current directory (e.g. `.venv`), and install dependencies only inside that venv.
+- Do not install packages into your global Python environment.
+
+## Local verification commands (must be run for real)
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements-dev.txt
+pytest
+```
