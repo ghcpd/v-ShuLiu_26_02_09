@@ -1,0 +1,148 @@
+User: # Task: Add optional HTML escaping switches
+
+You are maintaining a small Python project that implements a minimal table renderer `PrettyTable` (see `src/miniprettytable/table.py`). It can render table data as HTML.
+
+## Background
+
+Currently, `PrettyTable.get_html_string()` always HTML-escapes both:
+- header text, and
+- data cell text
+
+(e.g. `<em>` becomes `&lt;em&gt;`).
+
+Escaping by default is security-friendly, but it prevents users from keeping small, controlled markup (such as `<em>` or `<a>`) in the generated HTML. Your job is to keep the default behavior unchanged, while allowing users to explicitly disable escaping.
+
+## What you must do
+
+1. Add two keyword parameters to `PrettyTable.get_html_string()`:
+   - `escape_header: bool` — whether to escape header text
+   - `escape_data: bool` — whether to escape data cell text
+
+2. **Default behavior must not change**:
+   - If callers do not pass these parameters, behavior must be equivalent to `escape_header=True` and `escape_data=True` (escaping stays on).
+
+3. When a switch is explicitly disabled:
+   - `escape_header=False`: header text must remain unescaped (so tags like `<em>` and `<a>` can appear in the output HTML)
+   - `escape_data=False`: same for data cells
+
+4. Both switches must work in both modes:
+   - `format=False` (simple HTML)
+   - `format=True` (HTML with style attributes)
+
+5. **You do not need to add new tests**:
+   - The repository already contains tests under `tests/` that cover the key acceptance criteria.
+   - Your goal is to fix the implementation so all provided tests pass.
+
+6. **You must do a real red → green verification**:
+   - At the end, run the test command and iterate based on real terminal failures until everything is green.
+   - Passing must be proven by the real test runner output (e.g. `pytest` summary / exit code 0, or `python -m unittest`).
+   - Do not use custom prints/logs to claim success.
+
+7. **Create or update README.md**:
+   - Provide concise, actionable instructions: what the repo is for, how to create/activate a virtual environment, how to install dependencies, and how to run the tests.
+
+## Environment constraints
+
+- Python: 3.10+
+- You must create and use a virtual environment in the current directory (e.g. `.venv`), and install dependencies only inside that venv.
+- Do not install packages into your global Python environment.
+
+## Local verification commands (must be run for real)
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements-dev.txt
+pytest
+```
+
+
+GitHub Copilot: I'll help you implement the optional HTML escaping switches for the PrettyTable project. Let me start by setting up the environment and understanding the current implementation. 
+
+Created 5 todos
+
+Ran terminal command: python -m venv .venv
+
+Ran terminal command: .\.venv\Scripts\Activate.ps1; pip install -r requirements-dev.txt
+
+Read [](file:///c%3A/Users/v-shuliu1/test/0209/Claude-haiku-4.5/src/miniprettytable/table.py)
+
+Read [](file:///c%3A/Users/v-shuliu1/test/0209/Claude-haiku-4.5/tests/test_html_escape_options.py)
+
+Starting: *Implement escape_header and escape_data parameters* (3/5)
+
+Now let me implement the changes to add the optional escaping parameters: 
+
+Replacing 9 lines with 11 lines in [](file:///c%3A/Users/v-shuliu1/test/0209/Claude-haiku-4.5/src/miniprettytable/table.py)
+
+
+```
+
+```
+
+
+Replacing 9 lines with 9 lines in [](file:///c%3A/Users/v-shuliu1/test/0209/Claude-haiku-4.5/src/miniprettytable/table.py)
+
+
+```
+
+```
+
+
+Replacing 12 lines with 12 lines in [](file:///c%3A/Users/v-shuliu1/test/0209/Claude-haiku-4.5/src/miniprettytable/table.py)
+
+
+```
+
+```
+
+
+Read [](file:///c%3A/Users/v-shuliu1/test/0209/Claude-haiku-4.5/src/miniprettytable/table.py#30-30), lines 30 to 80
+
+Starting: *Run tests and iterate until passing* (4/5)
+
+Ran terminal command: .\.venv\Scripts\Activate.ps1; pytest
+
+Excellent! All tests pass. Now let me create a comprehensive README.md: 
+
+Created [](file:///c%3A/Users/v-shuliu1/test/0209/Claude-haiku-4.5/README.md)
+
+Completed: *Run tests and iterate until passing* (4/5)
+
+Ran terminal command: .\.venv\Scripts\Activate.ps1; pytest -v
+
+Perfect! All tasks completed successfully. Here's a summary of what was implemented:
+
+## Implementation Complete ✓
+
+### Changes Made:
+
+1. **Updated `get_html_string()` Method** in table.py
+   - Added `escape_header: bool = True` parameter
+   - Added `escape_data: bool = True` parameter
+   - Both default to `True` to maintain backward compatibility
+   - Headers are conditionally escaped based on `escape_header` parameter
+   - Data cells are conditionally escaped based on `escape_data` parameter
+   - Works in both `format=False` (simple HTML) and `format=True` (styled HTML) modes
+
+2. **Created README.md** with comprehensive documentation including:
+   - Project description and features
+   - Virtual environment setup instructions
+   - Dependency installation steps
+   - Test execution guide
+   - Usage examples
+   - API reference for all parameters
+   - Security notes about safe HTML escaping defaults
+
+### Test Results:
+
+✅ **All 6 tests passing:**
+- Default behavior escapes headers and data (security-friendly)
+- Explicit `escape_header=True, escape_data=True` matches default
+- Can disable header escaping while keeping data escaped
+- Can disable data escaping while keeping header escaped
+- Parameters work correctly in both simple and formatted HTML modes
+
+The implementation maintains full backward compatibility (default behavior unchanged) while enabling users to explicitly disable escaping for trusted content when needed.
+
+Made changes.
