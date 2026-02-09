@@ -1,0 +1,13 @@
+[project]
+name = "miniprettytable"
+version = "0.1.0"
+requires-python = ">=3.10"
+description = "A tiny table-to-HTML renderer used for feature/improvement maintenance exercises."
+
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = ["src"]
+
+[tool.ruff]
+# Optional: included so the repo looks realistic; not required by the task.
+line-length = 100
