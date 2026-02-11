@@ -28,14 +28,14 @@ class PrettyTable:
         for row in rows:
             self.add_row(row)
 
-    def get_html_string(self, *, format: bool = False, xhtml: bool = False, **_kwargs) -> str:
+    def get_html_string(self, *, format: bool = False, xhtml: bool = False, escape_header: bool = True, escape_data: bool = True) -> str:
         """Return an HTML representation of the table.
 
         Parameters (subset):
         - format: when True, include some style attributes
         - xhtml: when True, use <br/> for newlines, else <br>
-
-        Note: baseline intentionally ignores extra kwargs.
+        - escape_header: whether to HTML-escape header text
+        - escape_data: whether to HTML-escape cell data
         """
 
         linebreak = "<br/>" if xhtml else "<br>"
@@ -47,7 +47,11 @@ class PrettyTable:
         lines.append("        <tr>")
 
         for name in self.field_names:
-            header_text = escape(name).replace("\n", linebreak)
+            if escape_header:
+                header_text = escape(name)
+            else:
+                header_text = name
+            header_text = header_text.replace("\n", linebreak)
             if format:
                 lines.append(
                     '            <th style="padding-left: 1em; padding-right: 1em; text-align: center">%s</th>'
@@ -63,7 +67,11 @@ class PrettyTable:
         for row in self._rows:
             lines.append("        <tr>")
             for datum in row:
-                cell_text = escape(datum).replace("\n", linebreak)
+                if escape_data:
+                    cell_text = escape(datum)
+                else:
+                    cell_text = datum
+                cell_text = cell_text.replace("\n", linebreak)
                 if format:
                     lines.append(
                         '            <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">%s</td>'
