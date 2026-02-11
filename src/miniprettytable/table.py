@@ -28,12 +28,14 @@ class PrettyTable:
         for row in rows:
             self.add_row(row)
 
-    def get_html_string(self, *, format: bool = False, xhtml: bool = False, **_kwargs) -> str:
+    def get_html_string(self, *, format: bool = False, xhtml: bool = False, escape_header: bool = True, escape_data: bool = True, **_kwargs) -> str:
         """Return an HTML representation of the table.
 
         Parameters (subset):
         - format: when True, include some style attributes
         - xhtml: when True, use <br/> for newlines, else <br>
+        - escape_header: when True, escape HTML in header text (default True)
+        - escape_data: when True, escape HTML in data cell text (default True)
 
         Note: baseline intentionally ignores extra kwargs.
         """
@@ -47,7 +49,7 @@ class PrettyTable:
         lines.append("        <tr>")
 
         for name in self.field_names:
-            header_text = escape(name).replace("\n", linebreak)
+            header_text = (escape(name) if escape_header else name).replace("\n", linebreak)
             if format:
                 lines.append(
                     '            <th style="padding-left: 1em; padding-right: 1em; text-align: center">%s</th>'
@@ -63,7 +65,7 @@ class PrettyTable:
         for row in self._rows:
             lines.append("        <tr>")
             for datum in row:
-                cell_text = escape(datum).replace("\n", linebreak)
+                cell_text = (escape(datum) if escape_data else datum).replace("\n", linebreak)
                 if format:
                     lines.append(
                         '            <td style="padding-left: 1em; padding-right: 1em; text-align: center; vertical-align: top">%s</td>'
