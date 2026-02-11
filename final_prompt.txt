@@ -1,57 +1,127 @@
-# Task: Add optional HTML escaping switches
+Role & Objective
+You are an expert Python library developer working on the prettytable project. Your goal is to modify the PrettyTable implementation so that PrettyTable.get_string(...) supports a new row_filter option that lets callers precisely control which data rows are rendered, while preserving all existing behaviors and passing the full test suite in a single run.
 
-You are maintaining a small Python project that implements a minimal table renderer `PrettyTable` (see `src/miniprettytable/table.py`). It can render table data as HTML.
+Inputs & Context
+- Codebase: The prettytable project located in the current working directory, with its Python sources under src/prettytable/.
+- Primary target class and methods:
+  - Class: PrettyTable
+  - Method to extend: PrettyTable.get_string(...)
+  - Internal helpers: _get_rows, _get_options, OptionsType, option validation helpers, and any related properties/attributes used by options.
+- Test suite: Pytest tests located under tests/, including but not limited to:
+  - tests/test_row_filter.py
+  - tests/test_prettytable.py
+  - tests/test_colortable.py
+  - tests/test_sections.py
+- Runtime environment:
+  - Python interpreter available on PATH as python.
+  - Tests are executed from the project root directory.
 
-## Background
+Step-by-Step Instructions
+1. Add the row_filter option to the table options model
+- Extend the internal options representation so that row_filter is treated like other table options:
+  - Add a row_filter entry to the _options list on PrettyTable so that it can be read from keyword arguments and exposed as an attribute/property.
+  - Update the OptionsType TypedDict (or equivalent options type definition) to include a field:
+    - row_filter: Callable[[RowType], bool] | None
+    where RowType is the same row type used internally (a list of cell values in field order).
+- Ensure that the default value for row_filter is None when not provided by the caller.
 
-Currently, `PrettyTable.get_html_string()` always HTML-escapes both:
-- header text, and
-- data cell text
+2. Implement validation for row_filter
+- Add a dedicated validation path for the row_filter option in the central option validation method (e.g., _validate_option).
+- The validation logic must enforce that:
+  - row_filter is either None or a callable object (i.e., has __call__).
+  - If the value is not None and not callable, raise a descriptive ValueError.
+- Implement a helper method such as _validate_row_filter(name, val) if consistent with the existing style.
 
-(e.g. `<em>` becomes `&lt;em&gt;`).
+3. Expose row_filter as a public property on PrettyTable
+- Add a row_filter property on PrettyTable with:
+  - Getter that returns the underlying _row_filter attribute.
+  - Setter that validates the value using the standard option validation mechanism, then stores it in _row_filter.
+- Ensure this property behaves consistently with other PrettyTable options (e.g., sort_key, sortby, etc.), including type hints and docstrings.
 
-Escaping by default is security-friendly, but it prevents users from keeping small, controlled markup (such as `<em>` or `<a>`) in the generated HTML. Your job is to keep the default behavior unchanged, while allowing users to explicitly disable escaping.
+4. Wire row_filter through option collection
+- Make sure that when PrettyTable.get_string(...) or any other output method collects options (e.g., via _get_options(kwargs)), the resulting options dictionary includes a row_filter entry.
+- Confirm that row_filter can be supplied either as:
+  - A keyword argument to PrettyTable.get_string(...), or
+  - A previously set attribute/property on the PrettyTable instance.
+- Preserve existing option precedence semantics: explicit keyword arguments to get_string(...) override instance attributes.
 
-## What you must do
+5. Apply row_filter to data rows at the correct stage
+- Implement the actual filtering behavior in the internal row selection logic, not in presentation logic:
+  - Use the internal helper that gathers data rows to be displayed (e.g., _get_rows(options)).
+  - After the existing logic that handles:
+    - Old vs new slicing behavior (oldsortslice),
+    - Sorting by sortby using sort_key,
+    - Slicing by start and end,
+    apply row_filter to the resulting list of rows.
+- Concretely:
+  - Let rows be the list of RowType objects produced by the current _get_rows logic.
+  - If options["row_filter"] is not None, transform rows to:
+    - rows = [row for row in rows if row_filter(row)]
+    where row_filter is options["row_filter"].
+  - If row_filter is None, leave rows unchanged.
+- Ensure that row_filter only reduces the set of rows; it must not:
+  - Change sorting semantics.
+  - Change slicing behavior based on start, end, or oldsortslice.
+  - Affect which columns/fields are selected (fields option).
+  - Affect formatting, padding, styles, or borders.
 
-1. Add two keyword parameters to `PrettyTable.get_html_string()`:
-   - `escape_header: bool` — whether to escape header text
-   - `escape_data: bool` — whether to escape data cell text
+6. Ensure consistent behavior across all output formats
+- Verify that all output methods which rely on the row selection helper (e.g., _get_rows) automatically respect row_filter:
+  - get_string(...)
+  - get_csv_string(...)
+  - get_html_string(...)
+  - get_json_string(...)
+  - get_latex_string(...)
+  - Any other method that uses _get_rows(options) to obtain data rows.
+- Do not introduce any special cases where some formats ignore row_filter; the filter must apply uniformly wherever data rows are rendered.
 
-2. **Default behavior must not change**:
-   - If callers do not pass these parameters, behavior must be equivalent to `escape_header=True` and `escape_data=True` (escaping stays on).
+7. Preserve existing semantics for all other options
+- Confirm that adding row_filter does not change semantics for existing features:
+  - Sorting by sortby and sort_key must behave as before, with row_filter applied only after sorting is complete.
+  - Slicing by start and end must behave exactly as before, with row_filter applied only to the sliced subset.
+  - fields selection and formatting (alignment, widths, styles, borders, etc.) must remain unchanged except for having fewer rows.
+- For the special case where oldsortslice is enabled, continue to follow the existing behavior for ordering and slicing, then apply row_filter to the resulting rows.
 
-3. When a switch is explicitly disabled:
-   - `escape_header=False`: header text must remain unescaped (so tags like `<em>` and `<a>` can appear in the output HTML)
-   - `escape_data=False`: same for data cells
+8. Update docstrings and inline documentation
+- In the PrettyTable.get_string(...) docstring, add a clear description of the new row_filter parameter:
+  - Describe the parameter as: a callable taking a single row (list of cell values in field order) and returning True to include the row, False to exclude it.
+  - Clarify that row_filter is applied only to rows that would otherwise be rendered, after other options like sorting and slicing are applied.
+- Ensure that the explanation matches the actual implementation.
 
-4. Both switches must work in both modes:
-   - `format=False` (simple HTML)
-   - `format=True` (HTML with style attributes)
+9. Run tests and iterate until all pass
+- From the project root directory, run the full test suite using pytest:
+  - Command: python -m pytest
+- If any tests fail:
+  - Inspect the failure messages and stack traces.
+  - Adjust the implementation of row_filter, its validation, or its integration points to restore all previous behavior while keeping the new feature working.
+  - Re-run python -m pytest after each fix until all tests pass.
+- Pay particular attention to:
+  - tests/test_row_filter.py
+  - tests that cover get_string(), get_csv_string(), get_html_string(), get_json_string(), get_latex_string(), pagination, and style options.
 
-5. **You do not need to add new tests**:
-   - The repository already contains tests under `tests/` that cover the key acceptance criteria.
-   - Your goal is to fix the implementation so all provided tests pass.
+Output Specification
+- Final deliverable: a modified prettytable codebase in-place, with:
+  - PrettyTable.get_string(...) accepting a row_filter keyword argument.
+  - The internal options model, validation logic, and helper methods updated to support row_filter.
+  - All public PrettyTable APIs behaving as before except for the new ability to filter rows.
+- Behavioral expectations:
+  - Example behavior 1: If a table has data rows, calling get_string(row_filter=lambda row: row[1] == 1) only renders rows whose second column equals 1.
+  - Example behavior 2: Given a table with rows ["r1", 0], ["r2", 0], ["r3", 1], the call get_string(start=0, end=2, row_filter=lambda row: row[1] == 1) must produce output containing neither r1 nor r2 nor r3, because row_filter is applied only to the sliced range rows[0:2], which do not match.
+- Test outcome requirement:
+  - After your changes, the command python -m pytest from the project root must complete successfully with all tests passing.
 
-6. **You must do a real red → green verification**:
-   - At the end, run the test command and iterate based on real terminal failures until everything is green.
-   - Passing must be proven by the real test runner output (e.g. `pytest` summary / exit code 0, or `python -m unittest`).
-   - Do not use custom prints/logs to claim success.
+Constraints & Preferences
+- Do not alter any existing public APIs besides adding the row_filter option to PrettyTable.get_string(...) and the corresponding property/option plumbing.
+- Maintain the existing coding style, type hinting, and structure used in the prettytable codebase.
+- Do not introduce new third-party dependencies.
+- Keep changes minimal and focused on implementing row_filter, fixing only issues that are necessary to support this feature and to make existing tests pass.
 
-7. **Create or update README.md**:
-   - Provide concise, actionable instructions: what the repo is for, how to create/activate a virtual environment, how to install dependencies, and how to run the tests.
+Quality Gates
+- The implementation is considered complete only if all of the following conditions are met:
+  - PrettyTable.get_string(...) accepts and correctly applies a row_filter callable as specified.
+  - Sorting, slicing, field selection, formatting, and all existing options behave exactly as before when row_filter is None or not provided.
+  - All existing tests, plus any tests that exercise the new row_filter behavior, pass using python -m pytest from the project root.
+  - The code remains readable, type-correct, and consistent with the existing style.
 
-## Environment constraints
-
-- Python: 3.10+
-- You must create and use a virtual environment in the current directory (e.g. `.venv`), and install dependencies only inside that venv.
-- Do not install packages into your global Python environment.
-
-## Local verification commands (must be run for real)
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements-dev.txt
-pytest
-```
+Critical Instruction
+At every step, you must ensure that the addition of row_filter only reduces the set of rendered rows without altering any other semantics, and you must not require any further user interaction beyond this single prompt; the entire task, including code changes and test verification, must be completed autonomously based on the instructions above.
